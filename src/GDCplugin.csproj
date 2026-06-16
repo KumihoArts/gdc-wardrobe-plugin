@@ -1,0 +1,112 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net46</TargetFramework>
+    <AssemblyName>GDCplugin</AssemblyName>
+    <RootNamespace>GDCplugin</RootNamespace>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <OutputPath>..\bin\</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="IllusionModdingAPI.HS2API" Version="1.45.1" />
+    <!-- Same ValueTuple caveat as FavorHide. Use out-params and named structs. -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\*.png" />
+    <EmbeddedResource Include="Resources\gdc_ui.unity3d" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Direct refs to the HS2 install rather than IllusionLibs targets. -->
+    <Reference Include="Assembly-CSharp">
+      <HintPath>D:\HS2 R16\HoneySelect2_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>D:\HS2 R16\HoneySelect2_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>D:\HS2 R16\HoneySelect2_Data\Managed\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>D:\HS2 R16\HoneySelect2_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>D:\HS2 R16\HoneySelect2_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>D:\HS2 R16\HoneySelect2_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>D:\HS2 R16\HoneySelect2_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>D:\HS2 R16\HoneySelect2_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- KumihoUI loads the embedded skin via AssetBundle.LoadFromMemory. -->
+    <Reference Include="UnityEngine.AssetBundleModule">
+      <HintPath>D:\HS2 R16\HoneySelect2_Data\Managed\UnityEngine.AssetBundleModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="HS2_Sideloader">
+      <HintPath>D:\HS2 R16\BepInEx\plugins\HS2_BepisPlugins\HS2_Sideloader.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Ionic.Zip ships in HS2's managed assemblies. Sideloader uses it
+         to read zipmods, and the plugin needs it to force-load sibling
+         bundles that Sideloader hasn't already paged in. -->
+    <Reference Include="Ionic.Zip">
+      <HintPath>D:\HS2 R16\HoneySelect2_Data\Managed\Ionic.Zip.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Material Editor exposes XMLShaderProperties as a curated dict of
+         shader name -> editable property metadata. I use that for auto-
+         discover instead of trying to enumerate shader fields at runtime
+         (which Unity 2018.4 doesn't fully support). -->
+    <Reference Include="HS2_MaterialEditor">
+      <HintPath>D:\HS2 R16\BepInEx\plugins\HS2_Plugins\HS2_MaterialEditor.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="SkipAllRefs" AfterTargets="ResolveReferences">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Auto-deploy to HS2 after a successful build so I can test immediately. -->
+  <Target Name="DeployToHS2" AfterTargets="Build" Condition="'$(Configuration)' == 'Release' Or '$(Configuration)' == 'Debug'">
+    <MakeDir Directories="D:\HS2 R16\BepInEx\Plugins\Kumiho" />
+    <Copy SourceFiles="$(TargetPath)"
+          DestinationFolder="D:\HS2 R16\BepInEx\Plugins\Kumiho"
+          SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Deployed $(AssemblyName).dll to BepInEx\Plugins\Kumiho." />
+  </Target>
+
+</Project>

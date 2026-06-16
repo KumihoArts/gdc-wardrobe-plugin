@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ConfuserEx2 project for cutting a beta DLL.
+
+  Conservative, Mono-safe ruleset: HS2 runs the old Unity 2018 Mono runtime, so
+  anti-tamper / anti-debug / packer / native protections are deliberately omitted
+  (they break JIT/loading under that runtime).
+
+  No string-encryption ("constants"), on purpose: KumihoUI + the maker/logo code
+  load embedded resources by literal name
+  (GetManifestResourceStream("GDCplugin.Resources.*")). Rename rewrites those
+  direct literals in lockstep with the resource it renames; string-encryption
+  would hide the literal from that analysis and the UI bundle would fail to load.
+  None of the strings are secrets (ExtData keys, resource names, log tags).
+
+  THE UNITY-MESSAGE GOTCHA (root cause of the first beta not loading): Unity
+  invokes magic methods (Awake/Update/OnGUI/OnDestroy/LateUpdate/...) BY NAME via
+  its message dispatcher, not through a vtable. ConfuserEx has no Unity awareness,
+  so renaming `Awake` to junk means Unity never finds it: the MonoBehaviour loads
+  but silently does NOTHING (no exception, no log, dead plugin). The second rule
+  below excludes those method names from rename. Methods that OVERRIDE an external
+  base (e.g. KKAPI CharaCustomFunctionController.Awake/OnReload) are vtable-linked
+  and ConfuserEx preserves their names automatically, so they don't need listing,
+  but listing them is harmless. If a NEW Unity message method is added to any
+  MonoBehaviour in this plugin, add its name to the second rule or it dies silently.
+
+  ref proxy is currently OFF: not needed (rename was the only thing breaking load),
+  lowest readability value, highest Mono risk. Can be re-enabled with an in-game
+  load test if more protection is wanted.
+
+  Run via tools\build-beta.ps1 (do NOT wire this into the normal Release build).
+-->
+<project outputDir="C:\Dev\GDCplugin\beta" baseDir="C:\Dev\GDCplugin\bin" xmlns="http://confuser.codingcat.cn">
+
+  <!-- Dependency resolution paths so Confuser can load the references. -->
+  <probePath>C:\Dev\GDCplugin\bin</probePath>
+  <probePath>D:\HS2 R16\HoneySelect2_Data\Managed</probePath>
+  <probePath>D:\HS2 R16\BepInEx\core</probePath>
+  <probePath>D:\HS2 R16\BepInEx\Plugins</probePath>
+  <probePath>D:\HS2 R16\BepInEx\plugins\HS2_BepisPlugins</probePath>
+  <probePath>D:\HS2 R16\BepInEx\plugins\HS2_Plugins</probePath>
+
+  <rule pattern="true" preset="none" inherit="false">
+    <!-- Cheap, harmless: discourages ildasm round-trips. -->
+    <protection id="anti ildasm" />
+    <!-- The core win: junk symbol names. renPublic because nothing external
+         references this plugin's public surface (BepInEx/Harmony/KKAPI all
+         resolve by attribute or compile-time typeof, not by our names). -->
+    <protection id="rename">
+      <argument name="mode" value="unicode" />
+      <argument name="renPublic" value="true" />
+    </protection>
+    <!-- Obscures method bodies so decompiled C# reads as goto soup. Bodies only,
+         not names, so it is safe on Unity message methods. -->
+    <protection id="ctrl flow" />
+    <!-- ref proxy intentionally OFF (see header). -->
+    <!-- <protection id="ref proxy" /> -->
+  </rule>
+
+  <!-- Keep Unity message method NAMES intact (see THE UNITY-MESSAGE GOTCHA above).
+       Removes ONLY rename for these; ctrl flow still mangles their bodies. -->
+  <rule pattern="match-name('^(Awake|Start|OnEnable|OnDisable|Update|FixedUpdate|LateUpdate|OnGUI|OnDestroy|OnRenderObject|OnRenderImage|OnPreRender|OnPostRender|OnApplicationQuit|OnApplicationFocus|OnApplicationPause)$')" inherit="false">
+    <protection id="rename" action="remove" />
+  </rule>
+
+  <!-- THE HARMONY GOTCHA: Harmony binds a prefix/postfix's PARAMETERS to the
+       original method by NAME (__instance, __result, _lst, ...). Rename mangles
+       those parameter names -> "Parameter '' not found" -> IL compile error ->
+       Awake throws. FilterHooks is the only Harmony patch class here; excluding
+       it from rename keeps its parameter names intact (ctrl flow still obfuscates
+       the body). Any NEW [HarmonyPatch] class must be added here too. -->
+  <rule pattern="match('FilterHooks')" inherit="false">
+    <protection id="rename" action="remove" />
+  </rule>
+
+  <module path="GDCplugin.dll" />
+</project>

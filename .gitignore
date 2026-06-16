@@ -1,0 +1,63 @@
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Unity 2018 project cache and generated folders. The Library cache is
+# multiple GB and regenerated on import; everything in Temp/Logs/obj is
+# transient. NOTE: Bundle/**/*.meta files are intentionally NOT ignored:
+# Unity uses them to track asset GUIDs and the project breaks without them.
+Bundle/Library/
+Bundle/Logs/
+Bundle/Temp/
+Bundle/obj/
+Bundle/UserSettings/
+# Bundle build outputs: the .manifest files are regenerable, the .unity3d
+# stays so the plugin compiles without requiring a Unity rebuild step.
+Bundle/Assets/StreamingAssets/*.manifest
+Bundle/Assets/StreamingAssets/StreamingAssets
+Bundle/Assets/StreamingAssets/StreamingAssets.manifest
+
+# Heavy test data + external reference projects. Not plugin source: large
+# binary zipmod bundles and GDC's own Unity packer project. Kept out of git
+# to stop the repo ballooning past 1 GB. Re-add a specific one if it ever
+# needs versioning.
+GDCUnity/
+example_mods/
+mod/
+mod2/
+mod0906/
+# Beta tester BepInEx logs: multi-MB diagnostic dumps pulled during bug triage,
+# not source. Kept locally, out of git to stop the repo ballooning.
+tester logs/
+
+# Beta obfuscation: the ConfuserEx2 CLI binaries (downloaded, ~2 MB) and the
+# obfuscated build output. The .crproj + build-beta.ps1 ARE versioned; the
+# tool and its output are not. Re-fetch the CLI from the mkaring/ConfuserEx
+# v1.6.0 release if tools\confuser\ is missing.
+tools/confuser/
+beta/
+Confuser*.log
+
+# --- Not part of the public release ---
+# Internal working docs + AI-assistant config. Kept locally, out of the repo.
+CLAUDE.md
+HANDOFF.md
+ACCESSORY_LAYERING_PLAN.md
+LAYER_CLIPPING.md
+MOD_CONVENTION.md
+beta-test.txt
+.claude/
+# Internal dev screenshots (title-bar tuning shots), not user-facing.
+screenshots/
+# Hand-painted UI source art. The built bundle + PNG exports ship so the skin is
+# still rebuildable; the editable PSDs stay private.
+Source/
+# Root working-copy duplicates. The shipped copies live under src/Resources/.
+/GDCLogo.png
+/GDCButton.png
+/GDCloho.png
+# Testmod packer artifacts (kept private along with the convention docs).
+/mod.xml
+mod_convention.xml
